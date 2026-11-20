@@ -18,11 +18,13 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 **Implementer subagents** should be run in the background where possible for maximum concurrency.
 
+**Write access is opt-in.** Subagents start read-only, so every subagent that has to save files must be launched with write access — exploration (which writes notes), implementer, merger, and fix-up subagents alike. In Pi that is `mode: "read-write"` on the `subagent` tool; omit it and the child reads, plans, and hands the work back unimplemented. Only review-only subagents should stay read-only.
+
 ## Steps
 
 1. Read the spec and tickets to understand the task graph.
 
-2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
+2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. That subagent saves its markdown notes in a directory outside the repo, accessible by all future subagents, which is why it needs write access (see above). This lets **implementer subagents** focus on implementation rather than exploration.
 
 3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR after the first merge in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
