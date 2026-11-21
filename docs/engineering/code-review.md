@@ -1,6 +1,6 @@
 ## What it does
 
-`code-review` reviews the diff between `HEAD` and a fixed point you name (a commit, a branch, a tag, `main`, `HEAD~5`) along two axes. **Standards** asks whether the code follows how this repo writes code. **Spec** asks whether the code does what the originating issue or [spec](https://www.aihero.dev/ai-coding-dictionary/spec) asked for. Each axis runs in its own [sub-agent](https://www.aihero.dev/ai-coding-dictionary/subagent) so neither sees the other's reasoning.
+`code-review` reviews the diff between `HEAD` and a fixed point you name (a commit, a branch, a tag, `main`, `HEAD~5`) along two axes. **Standards** asks whether the code follows how this repo writes code. **Spec** asks whether the code does what the originating issue or [spec](https://www.aihero.dev/ai-coding-dictionary/spec) asked for. Each axis runs in its own [sub-agent](https://www.aihero.dev/ai-coding-dictionary/subagent) so neither sees the other's reasoning. Before either axis starts, it runs the repo's own smoke or browser check, because a diff shows what the code says and never what the page does.
 
 The skill never merges or re-ranks the two axes. The report ends with a worst issue *per axis* and declines to name a single winner across them. A change can pass one axis and fail the other. Code that follows every convention but implements the wrong thing passes Standards and fails Spec. Code that does exactly what the [ticket](https://www.aihero.dev/ai-coding-dictionary/ticket) asked but breaks the repo's conventions does the reverse. A blended verdict lets the passing axis hide the failing one.
 
@@ -43,6 +43,10 @@ Step 1 depends on the tracker doc, which [setup-matt-pocock-skills](https://aihe
 
 This design exists to avoid a generic review skill that does not know your standards. Such a skill flags what is deliberate in your codebase and misses the invariants your codebase depends on. So the repo's own documentation is the [primary source](https://www.aihero.dev/ai-coding-dictionary/primary-source) on the Standards axis, and **the repo always overrides**.
 
+Two kinds of finding outrank the rest. A **numeric spec value** that is missing, changed, rounded away or contradicted (a px, a ms, a count, a threshold) is a **blocker**: it sorts first in the Spec report with the spec's number beside the code's, and it is never a footnote. A **documented-standard breach** leads the Standards report. Baseline smells never do, because they are judgement calls.
+
+Findings a pre-commit hook already blocks are skipped. Formatting, import order, lint rules and secret scanning that fail the commit are caught at commit time, and spending review attention there is how the expensive findings get crowded out. The exceptions are a hook that is present but disabled, or a diff that quietly weakens one.
+
 The **smell baseline** sits under the repo's standards. It is twelve code smells from chapter 3 of Fowler's _Refactoring_: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Each is a labelled heuristic ("possible Feature Envy"), never a hard violation. Each states what the smell is and how to fix it, so a finding comes with a fix attached rather than only a complaint. Both axes skip anything your linter already enforces.
 
 ## Common questions
@@ -76,6 +80,10 @@ Not without checking. Sub-agent output is a hypothesis, not evidence. One team r
 
 Each fix adds new code to review, and the judgement-call half of the Standards axis gives different results from run to run. One reader described the loop: "/code-review and /improve-code-architecture always find new stuff every time. I implement fixes, rerun these skills, and again and again." There is no convergence guarantee. Treat a pass as a list of leads. Act on the ones with a cited rule behind them, then stop. Do not run it in a loop until it comes back clean, because it never will.
 
+**It reported a runtime bug it cannot possibly have seen running.**
+
+That was the old behaviour and it is the reason the smoke step exists. A review that reads a diff can spot a value that never reaches the DOM only by inference, and an inferred runtime finding is a guess wearing a finding's clothes. The skill now runs the repo's smoke or browser check first, and a runtime claim that could not be confirmed against something running must be labelled unverified. If your repo has no such check, add one: it is the cheapest evidence a review can buy.
+
 **Does it review my uncommitted work?**
 
 No. It diffs `<fixed-point>...HEAD`. The three-dot form measures from the merge-base and excludes staged and working-tree changes. If `implement` has not made an interim commit, the review cannot see the work that is about to go into the next commit. Commit first, then review, then amend or add a fixup.
@@ -87,6 +95,8 @@ No. It diffs `<fixed-point>...HEAD`. The three-dot form measures from the merge-
 - Every Standards finding names either a rule in one of your repo's files or one of the twelve smells, with the hunk quoted; every Spec finding quotes a line of the spec.
 - The closing summary gives a worst issue per axis and declines to pick an overall winner.
 - With no spec available, the Spec block says so instead of listing requirements it inferred from the code.
+- It runs your smoke or browser check before the axes, or says the repo has none, rather than reporting a runtime problem it only inferred from the diff.
+- Any number your spec states appears at the top of the Spec block, quoted against the code's number.
 
 ## Where it fits
 

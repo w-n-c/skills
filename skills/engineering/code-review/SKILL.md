@@ -58,9 +58,9 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 ### 4. Verify runtime behaviour against something running
 
-If the repo has a smoke or browser check — a `smoke`/`test:smoke`/`test:e2e` script, a Playwright config, a `bin/smoke` — run it now, before the axes, and keep its output. It is cheap and it is the only evidence in this review that the change works when executed rather than when read.
+If the repo has a smoke or browser check (a `smoke`/`test:smoke`/`test:e2e` script, a Playwright config, a `bin/smoke`), run it now, before the axes, and keep its output. It is cheap and it is the only evidence in this review that the change works when executed rather than when read.
 
-A diff shows what the code says; it cannot show what the page does. So any finding of the shape "implemented, but wrong at runtime" (a value that does not reach the DOM, a handler that never fires, a layout that regresses) must be confirmed against the running app — the smoke run's output, a dev server plus the browser, or the accessibility tree. If you cannot run it, say the finding is unverified rather than presenting it as fact.
+A diff shows what the code says; it cannot show what the page does. So any finding of the shape "implemented, but wrong at runtime" (a value that does not reach the DOM, a handler that never fires, a layout that regresses) must be confirmed against the running app: the smoke run's output, a dev server plus the browser, or the accessibility tree. If you cannot run it, say the finding is unverified rather than presenting it as fact.
 
 If there is no smoke check, say so in the report. Do not silently serve diff-only findings as runtime findings.
 
@@ -79,7 +79,7 @@ Issue both sub-agent calls together, in the foreground, and aggregate the report
 - The diff command and commit list.
 - The path or fetched contents of the spec.
 - The smoke run's output or the explicit note that the repo has none.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong; (d) **numeric values** — any px, ms, count, size, ratio, threshold or timeout the spec states, checked against the diff. A numeric spec value that is absent, changed, rounded away, or contradicted is a **blocker**, not a nit, and these go first. Quote the spec line for each finding, and for (d) quote both the spec's number and the code's. Under 400 words."
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong; (d) **numeric values**: any px, ms, count, size, ratio, threshold or timeout the spec states, checked against the diff. A numeric spec value that is absent, changed, rounded away, or contradicted is a **blocker**, not a nit, and these go first. Quote the spec line for each finding, and for (d) quote both the spec's number and the code's. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 

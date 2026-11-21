@@ -30,13 +30,14 @@ If the tickets came from [to-tickets](https://aihero.dev/skills-to-tickets), [se
 
 ## What one run does
 
-A run has five steps, in order:
+A run has six steps, in order:
 
-1. Read the ticket or spec and work out the seams.
-2. Drive [tdd](https://aihero.dev/skills-tdd) at the pre-agreed seams, one red-green slice at a time.
-3. Typecheck often, run single test files as it goes.
-4. Run the full test suite once, at the end.
+1. Read the ticket or spec, including every `Reference:` path it names, and work out the seams.
+2. Refuse the ticket if it cannot check the work: an acceptance criterion with no browser or test that can confirm it goes back to you rather than getting guessed at.
+3. Drive [tdd](https://aihero.dev/skills-tdd) at the pre-agreed seams, one red-green slice at a time.
+4. Run the narrowest command that can fail while working, then the full gate once at the end.
 5. Run [code-review](https://aihero.dev/skills-code-review), then commit to the current branch.
+6. Stop and report if a subagent failed, rather than doing that work itself.
 
 One run covers one ticket. The tickets [to-tickets](https://aihero.dev/skills-to-tickets) produces are tracer-bullet vertical slices sized to fit a single fresh [context window](https://www.aihero.dev/ai-coding-dictionary/context-window), so the intended rhythm is: clear context, implement one ticket, commit, clear again. Each ticket is self-contained, so you can discard the previous ticket's context.
 
@@ -45,6 +46,12 @@ One run covers one ticket. The tickets [to-tickets](https://aihero.dev/skills-to
 The skill's central idea is the **seam**, the public boundary you observe behaviour at without reaching inside. Tests live at seams. When the seam is agreed before any code exists, the tests last, and you can rewrite the implementation underneath without changing them.
 
 The "pre-agreed" part matters, and it is also the skill's weakest point. Nothing inside `implement` agrees the seams. `tdd` is the skill that asks, and it refuses to write a test at an unconfirmed seam. So in practice the agreement happens either upstream in the spec, or in the first exchange of the run. If it happens nowhere, the run becomes "just write the code" and nothing warns you. Naming the seams in the spec is what stops that.
+
+## Two things it refuses
+
+**Tickets it cannot check.** A criterion that names no observable outcome cannot be implemented, only guessed at, and a guess is the one thing this skill is built not to make. The same rule catches a ticket that contradicts itself: when the follow-up section contradicts an acceptance criterion, the ticket is not done even if the code matches the follow-up. You get the conflict back instead of a coin flip.
+
+**Subagent failures it would otherwise absorb.** If a subagent exits non-zero, returns nothing, or reports work that did not land, the coordinator stops and reports. It does not open a new context and finish the ticket itself. The failure is information about the environment (the model, the credentials, the tool access, the prompt), and a coordinator that quietly does the work anyway destroys the evidence and pays the context cost twice.
 
 ## Common questions
 
@@ -79,6 +86,8 @@ The agent resolved `#2` against another numbered list in context, such as a todo
 - The session opens by reading the ticket or spec and restating what it will build, rather than asking you what to build.
 - You can see an actual `tdd` Skill tool call in the trace, not just tests appearing in the diff.
 - Typechecks and single test files run repeatedly during the run, and the full suite runs once near the end.
+- It reads the files the ticket points at before it writes anything, so the first test lands on an existing seam rather than beside it.
+- A ticket it cannot verify comes back to you with the criterion named, and a failed subagent stops the run instead of being quietly finished by the coordinator.
 - The run reaches a commit on your current branch without you prompting it to carry on.
 - The diff is one ticket's worth of change: a vertical slice through every layer, not several tickets swept together.
 
