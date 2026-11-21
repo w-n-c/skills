@@ -36,4 +36,8 @@ The failure is information about the environment: the model, the credentials, th
 
 ## 6. Review before you commit
 
-Call the Skill tool with "code-review" once the work is done, and address its findings. Commit to the current branch when the review is clean or the remaining findings are explicitly accepted.
+Call the Skill tool with "code-review" once the work is done, and address its findings. Commit to the current branch when the review is clean.
+
+A finding the review calls a violation or a blocker is **fixed or asked about**, never accepted and written up. "It works if you look at it this way" is a finding you did not answer: quote the rule, say why the code does not break it, or ask the user which one gives. Accepting a hard finding in the final report is how a wrong design reaches `main` with green tests around it.
+
+A review can also be wrong in the other direction: if it calls a rule violation "tolerable", that is a prompt to check whether the rule is mechanical (then it needs a guardrail, not a verdict) or genuinely a judgement call. Say which you concluded and why.
