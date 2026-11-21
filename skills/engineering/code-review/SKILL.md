@@ -38,7 +38,8 @@ Search the repo for every file that documents how code should be written. When `
 On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 
 - **The repo overrides.** A documented repo standard always wins; where it endorses something the baseline would flag, suppress the smell.
-- **Always a judgement call.** Each smell is a labelled heuristic ("possible Feature Envy"), never a hard violation. Like any standard here, skip anything tooling already enforces.
+- **Always a judgement call.** Each smell is a labelled heuristic ("possible Feature Envy"), never a hard violation.
+- **Skip what a pre-commit hook enforces.** Before listing standards, read the hook config (`.husky/`, `lint-staged` in `package.json`, `.pre-commit-config.yaml`, `lefthook.yml`). Formatting, import order, lint rules and secret scanning that fail the commit are already caught at commit time; reporting them spends the review's attention on the cheapest findings. The exceptions are hooks that are present but disabled or that the diff quietly weakens.
 
 Each smell reads *what it is* → *how to fix*; match it against the diff:
 
@@ -55,7 +56,15 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+### 4. Verify runtime behaviour against something running
+
+If the repo has a smoke or browser check — a `smoke`/`test:smoke`/`test:e2e` script, a Playwright config, a `bin/smoke` — run it now, before the axes, and keep its output. It is cheap and it is the only evidence in this review that the change works when executed rather than when read.
+
+A diff shows what the code says; it cannot show what the page does. So any finding of the shape "implemented, but wrong at runtime" (a value that does not reach the DOM, a handler that never fires, a layout that regresses) must be confirmed against the running app — the smoke run's output, a dev server plus the browser, or the accessibility tree. If you cannot run it, say the finding is unverified rather than presenting it as fact.
+
+If there is no smoke check, say so in the report. Do not silently serve diff-only findings as runtime findings.
+
+### 5. Spawn both sub-agents in parallel
 
 Issue both sub-agent calls together, in the foreground, and aggregate the reports they return.
 
@@ -63,19 +72,27 @@ Issue both sub-agent calls together, in the foreground, and aggregate the report
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full (the sub-agent has no other access to it).
-- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
+- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces, including what a pre-commit hook already blocks (formatting, lint, import order, secret scan). Under 400 words."
 
 **Spec sub-agent prompt** should include:
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
+- The smoke run's output or the explicit note that the repo has none.
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong; (d) **numeric values** — any px, ms, count, size, ratio, threshold or timeout the spec states, checked against the diff. A numeric spec value that is absent, changed, rounded away, or contradicted is a **blocker**, not a nit, and these go first. Quote the spec line for each finding, and for (d) quote both the spec's number and the code's. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
-### 5. Aggregate
+### 6. Aggregate
 
 Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
+
+Within an axis, a blocked finding sorts to the top and is never a footnote:
+
+- **Spec blocker**: a numeric value the spec states that is missing, changed or contradicted. Numbers are the easiest requirement to get subtly wrong and the hardest to notice in a diff, so they lead the report with the spec's value and the code's value side by side.
+- **Standards blocker**: a documented-standard breach, not a baseline smell.
+
+If the Spec axis could not run (no spec) or the runtime check could not run (no smoke script, no browser), state that in the summary line. A review that reports "0 findings" while an axis never ran is misleading.
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
